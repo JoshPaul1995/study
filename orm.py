@@ -44,4 +44,41 @@ async def select(sql,args,size=None):
         #cursor是游标,conn变量表示建立与数据库的连接。
         #'aiomysql.DictCursor'看似复杂，但它仅仅是要求返回字典格式。
         cur = await conn.cursor(aiomysql.DictCursor)
-        
+        #cursor游标实例调用execute来执行一条单独的SQL语句，参考自：
+        # https://docs.python.org/zh-cn/3.8/library/sqlite3.html?highlight=execute#cursor-objects
+        # 这里的 cur 来自上面的 conn.cursor ，然后执行后面的 sql ，具体sql干了啥先不管
+        await cur.execute(sql.replace('?','%s'),args or())
+        #size为空时为False,上面定义了初始值为None,具体得看传入的参数有没有定义size
+        if size:
+            #fetchmany可以获取行数为size的多行查询结果集，返回一个列表
+            rs = await cur.fetchmany(size)
+        else:
+            #fetchall可以获取一个查询结果的所有(剩余)行,返回一个列表
+            rs = await cur.fetchall()
+        #close(),立即关闭cursor,从这一时刻起该cursor将不再可用
+        await cur.close()
+        #日志:提示返回了多少行
+        logging.info('rows returned: %s' % len(rs))
+        #现在终于知道了,select函数给我们从SQL返回了一个列表
+        return rs
+
+#Execute
+async def execut(sql,args):
+    log(sql)
+    global __pool
+    with (await __pool) as conn:
+        try:
+            cur = await conn.cursor()
+            await cur.execute(sql.replace('?','%s'),args)
+            #rowcount获取行数,应该表示的是该函数影响的行数
+            affected = cur.rowcount
+            await cur.close()
+        except BaseException as_:
+        #源码 except BaseException as e :反正不用这个e,改掉就不报错
+            #将错误抛出,BaseException是异常不用管
+            raise
+        #返回行数
+        return affected
+
+
+
