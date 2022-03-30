@@ -16,3 +16,51 @@ def fn(self, name='world'): # 先定义函数
     print('Hello, %s.' % name)
 
 Hello = type('Hello', (object,), dict(hello=fn)) # 创建Hello class
+
+
+
+
+#元类
+在python中,“定义”一个类的操作为class Student(object):
+                               pass
+而“创建”一个类，则需要用到元类,操作如下:
+
+#metaclass是类的模板,所以必须从'type'派生
+class ListMetaclass(type):
+    def __new__(cls,name,bases,attrs):
+        attrs['add'] = lambda self,value:self.append(value)
+        return type.__new__(cls,name,bases,attrs)
+有了ListMetaclass,定义类的时候还要指示使用ListMetaclass来定制类,传入关键字参数metaclass:
+
+class Mylist(list,metaclass=ListMetaclass):
+    pass
+
+当传入关键字参数metaclass,它指示Python解释器在创建Mylist时,要 通过ListMetaclass.__new__()来创建,在此,我们可以修改类的定义,比如加上新的方法,然后返回修改
+的定义。
+
+__new__()方法接收到的参数依次是:
+1、当前准备创建的类的对象;
+2、类的名字;
+3、类继承的父类集合;
+4、类的方法集合。
+
+测试发现,Mylist可以调用add()方法,原本add方法只能用在可哈希的对象上,list和dict都不能使用
+>>> L = MyList()
+>>> L.add(1)
+>> L
+[1]
+结果显示Mylist可以使用add()方法
+
+而普通的list则无法使用add()方法:
+>>> L2 = list()
+>>> L2.add(1)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'list' object has no attribute 'add'
+
+
+元类创建的类可以动态修改类的定义(如加上一些新的方法),而定义一个类在定义时它的方法就是固定的。
+元类Metaclass主要用在ORM框架上，ORM全称“Object Relational Mapping”，即对象-关系映射，就是把关系数据库的一行映射为一个对象，也就是一个类对应一个表
+。这样，写代码更简单，不用直接操作SQL语句。要编写一个ORM框架，所有的类都只能动态定义，因为只有使用者才能根据表的结构定义出对应的类来。
+
+
