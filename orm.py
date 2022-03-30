@@ -80,5 +80,35 @@ async def execut(sql,args):
         #返回行数
         return affected
 
+#考虑如何定义一个User对象,然后通过数据库表users和它关联起来。
+from orm import Model,StringField,IntegerField
+
+class User(Model):
+    __table__ = 'users'
+    #注意,定义在User类中的__tabel__、id和name是类的属性,不是实例的属性!!所以，
+    #在类级别上定义的属性用来描述User对象和表的映射关系，
+    #而实例属性必须通过__init__()方法去初始化，所以两者互不干扰：
+    id = IntegerField(primary_key=True)
+    name = StringField()
+
+#创建实例:
+user = User(id=123,name = 'Josh')
+#存入数据库:
+user.insert()
+#查询所有User对象
+users = User.findAll()
+
+#这个函数只在下面的 Model元类中被调用， 作用好像是加数量为 num 的'?'
+def create_args_string(num):
+    L = []
+    for _ in range(num):
+    # 源码是 for n in range(num):  我看着反正 n 也不会用上，改成这个就不报错了
+        L.append('?')
+    return ', '.join(L)
+
+
+#Model只是一个基类,所以先定义ModelMetaclass,再在定义Model时使用metaclass参数
+#关于元类,教程在https://www.liaoxuefeng.com/wiki/1016959663602400/1017592449371072
+
 
 
