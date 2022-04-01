@@ -73,7 +73,7 @@ async def execut(sql,args):
             #rowcount获取行数,应该表示的是该函数影响的行数
             affected = cur.rowcount
             await cur.close()
-        except BaseException as_:
+        except BaseException as e:
         #源码 except BaseException as e :反正不用这个e,改掉就不报错
             #将错误抛出,BaseException是异常不用管
             raise
@@ -109,6 +109,60 @@ def create_args_string(num):
 
 #Model只是一个基类,所以先定义ModelMetaclass,再在定义Model时使用metaclass参数
 #关于元类,教程在https://www.liaoxuefeng.com/wiki/1016959663602400/1017592449371072
+class ModelMetaclass(type):
+    # __new__()方法接收到的参数依次是：
+    # cls：当前准备创建的类的对象 class
+    # name：类的名字 str
+    # bases：类继承的父类集合 Tuple
+    # attrs：类的方法集合
+    def __new__(cls,name,bases,attrs):
+        #排队Model类本身,返回它自己
+        if name=='Model':
+            return type.__new__(cls,name,bases,attrs)
+        #获取table名称
+        tableName = attrs.get('__table__',None) or name
+        #日志:找到名为name的model
+        logging.info('found model:%s (table:%s)' % (name,tableName))
+        #获取 所有的Field和主键名
+        mappings = dict()
+        fields = []
+        primaryKey = None
+        #attrs.items 取决于__new__传入的attrs参数
+        for k,v in attrs.items():
+            #isinstance函数:如果v和Field类型相同则返回True,不相同则False
+            if isinstance(v,Field):
+                logging.info('found mapping :%s ==>%s' % (k,v))
+                mappings[k] = v
+                #这里的v.primary_key我理解为:只要primary_key为True则field为主键
+                if v.primary_key:
+                    #找到主键,如果主键primaryKey有值时,返回一个错误
+                    if primaryKey:
+                        raise RuntimeError('Duplicate primary key for field:%s' % k)
+                    #然后直接给主键赋值
+                    primaryKey = k
+                else:
+                    #没找到主键,直接在fields里加上k
+                    fields.append(k)
+        if not primaryKey:
+            #如果主键为None就报错
+            raise RuntimeError('Primary key not found.')
+        for k in mappings.keys():
+            # pop : 如果 key 存在于字典中则将其移除并返回其值,否则返回default
+            attrs.pop(k)
+        escape_fields = list(map(lambda f: '`%s`' % f,fields))
+        attrs['__mappings__'] = mappings # 保存属性和列的映射关系
+        attrs['__table__'] = tableName # table 名
+        attrs['__primary_key__'] = primaryKey # 主键属性名
+        attrs['__fields__'] = fields # 除主键外的属性名
+        # 构造默认的 SELECT, INSERT, UPDAT E和 DELETE 语句
+        attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
+        attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (tableName, ', '.join(escaped_fields), primaryKey, create_args_string(len(escaped_fields) + 1))
+        attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (tableName, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primaryKey)
+        attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
+        return type.__new__(cls, name, bases, attrs)
+
+
+
 
 
 
