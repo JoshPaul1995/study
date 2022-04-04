@@ -64,3 +64,44 @@ AttributeError: 'list' object has no attribute 'add'
 。这样，写代码更简单，不用直接操作SQL语句。要编写一个ORM框架，所有的类都只能动态定义，因为只有使用者才能根据表的结构定义出对应的类来。
 
 
+
+
+
+2022.4.4
+
+SQL提供如下聚合函数：
+函数	说明
+COUNT 计算行数,可以设定条件,如SELECT COUNT(*) boys FROM students WHERE gender = 'M';
+SUM	计算某一列的合计值，该列必须为数值类型
+AVG	计算某一列的平均值，该列必须为数值类型
+MAX	计算某一列的最大值
+MIN	计算某一列的最小值
+
+
+“分组聚合”功能:
+在语句后加上GROUP BY:
+SELECT COUNT(*) num FROM students GROUP BY class_id;
+即可以将所聚合的数据按分组class_id来分组显示.
+
+
+SQL的'WHERE'常用作筛选所返回的数据;
+
+
+笛卡尔查询会产生大量的重复数据,使用INNER JOIN可以将对应的数据连接起来:
+SELECT s.id, s.name, s.class_id, c.name class_name, s.gender, s.score
+FROM students s
+INNER JOIN classes c
+ON s.class_id = c.id;
+
+INNER JOIN查询的写法是：
+1、先确定主表，仍然使用FROM <表1>的语法；
+2、再确定需要连接的表，使用INNER JOIN <表2>的语法；
+3、然后确定连接条件，使用ON <条件...>，这里的条件是s.class_id = c.id，表示students表的class_id列与classes表的id列相同的行需要连接；
+4、可选：加上WHERE子句、ORDER BY等子句。
+使用别名不是必须的，但可以更好地简化查询语句。
+
+
+
+
+
+
