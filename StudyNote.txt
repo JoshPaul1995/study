@@ -143,3 +143,38 @@ D：Duration，持久性，即事务完成后，对数据库数据的修改被�
 脏读：读到别的事务没有提交的数据。
 不可重复读：先前读取的数据，被别的事务改变了，再读就跟原来不一样了。
 幻读：第一次读的时候发现什么都没有，另一个事务偷偷放了东西进去，还是读不到,但是更新后再去访问的时候居然发现有东西了。
+
+
+
+https://www.liaoxuefeng.com/wiki/1016959663602400/1018490658464544编写数据访问代码
+接下来，就可以真正开始编写代码操作对象了。比如，对于User对象，我们就可以做如下操作：
+
+import orm
+from models import User, Blog, Comment
+
+def test():
+    yield from orm.create_pool(user='www-data', password='www-data', database='awesome')
+
+    u = User(name='Test', email='test@example.com', passwd='1234567890', image='about:blank')
+
+    yield from u.save()
+
+for x in test():
+    pass
+
+将代码改成:
+import asyncio
+import orm
+from models import User
+
+
+async def test(loop):
+    await orm.create_pool(user='root', password='password', db='awesome', loop=loop)
+    u = User(name='Test', email='test@example.com', passwd='1234567890', image='abut:blank')
+    await u.save()
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test(loop))
+
+才能运行成功。。呕心沥血了属于是
