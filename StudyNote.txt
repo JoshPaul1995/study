@@ -103,5 +103,43 @@ INNER JOIN查询的写法是：
 
 
 
+2022.4.5
+一些实用的sql语句:
+
+插入或替换:
+如果我们希望插入一条新记录（INSERT），但如果记录已经存在，就先删除原记录，再插入新记录。此时，可以使用REPLACE语句，这样就不必先查询，再决定是否先删除再插入：
+REPLACE INTO students (id, class_id, name, gender, score) VALUES (1, 1, '小明', 'F', 99);
+若id=1的记录不存在，REPLACE语句将插入新记录，否则，当前id=1的记录将被删除，然后再插入新记录。
+
+插入或更新:
+如果我们希望插入一条新记录（INSERT），但如果记录已经存在，就更新该记录，此时，可以使用INSERT INTO ... ON DUPLICATE KEY UPDATE ...语句：
+INSERT INTO students (id, class_id, name, gender, score) VALUES (1, 1, '小明', 'F', 99) ON DUPLICATE KEY UPDATE name='小明', gender='F', score=99;
+若id=1的记录不存在，INSERT语句将插入新记录，否则，当前id=1的记录将被更新，更新的字段由UPDATE指定。
+
+插入或忽略:
+如果我们希望插入一条新记录（INSERT），但如果记录已经存在，就啥事也不干直接忽略，此时，可以使用INSERT IGNORE INTO ...语句：
+INSERT IGNORE INTO students (id, class_id, name, gender, score) VALUES (1, 1, '小明', 'F', 99);
+若id=1的记录不存在，INSERT语句将插入新记录，否则，不执行任何操作。
+
+写入查询结果集:
+如果查询结果集需要写入到表中，可以结合INSERT和SELECT，将SELECT语句的结果集直接插入到指定表中:
+INSERT INTO statistics (class_id, average) SELECT class_id, AVG(score) FROM students GROUP BY class_id;
+SELECT... 相当于常规INSERT INTO语句中的VALUES.
 
 
+
+
+这种把多条语句作为一个整体进行操作的功能，被称为数据库事务。数据库事务可以确保该事务范围内的所有操作都可以全部成功或者全部失败。
+如果事务失败，那么效果就和没有执行这些SQL一样，不会对数据库数据有任何改动。
+可见，数据库事务具有ACID这4个特性：
+
+A：Atomic，原子性，将所有SQL作为原子工作单元执行，要么全部执行，要么全部不执行；
+C：Consistent，一致性，事务完成后，所有数据的状态都是一致的，即A账户只要减去了100，B账户则必定加上了100；
+I：Isolation，隔离性，如果有多个事务并发执行，每个事务作出的修改必须与其他事务隔离；
+D：Duration，持久性，即事务完成后，对数据库数据的修改被持久化存储。
+
+
+
+脏读：读到别的事务没有提交的数据。
+不可重复读：先前读取的数据，被别的事务改变了，再读就跟原来不一样了。
+幻读：第一次读的时候发现什么都没有，另一个事务偷偷放了东西进去，还是读不到,但是更新后再去访问的时候居然发现有东西了。
