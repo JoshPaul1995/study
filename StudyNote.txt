@@ -178,3 +178,77 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(test(loop))
 
 才能运行成功。。呕心沥血了属于是
+
+
+
+2022.4.6
+
+#关于装饰器#
+
+设有函数now()定义如下:
+def now():
+     print('2015-3-25')
+
+
+#装饰器的基础用法#
+设日志函数log定义如下:
+def log(func):
+    def wrapper(*args, **kw):
+        print('call %s():' % func.__name__)
+        return func(*args, **kw)
+    return wrapper
+
+now()函数通过log装饰:
+@log
+def now():
+    print('2015-3-25')
+执行结果如下:
+>>> now()
+call now():
+2015-3-25
+相当于执行了语句 now = log(now)
+
+
+
+#装饰器的进阶用法#
+如果decorator本身需要传入参数,那就需要编写一个返回decorator的高阶函数,以log函数为例,若要自定义log的文本,可以这么写:
+def log(text):
+    def decorator(func):
+        def wrapper(*args,**kw):
+            print('%s %s():' % (text,fun.__name__))
+            return func
+        return wrapper
+    return decorator
+这个3层嵌套的decorator用法如下:
+@log('execute')
+def now():
+    print('2015-3-25')
+执行结果如下:
+>>> now()
+execute now():
+2015-3-25
+相当于执行了语句 now = log('execute')(now)
+
+但上面这个用法,会导致'now'函数的名字变成'wrapper',在某些情况下可能会报错.
+一个完整的正确的decorator的写法如下:
+1、不带参数的decorator
+import functools
+
+def log(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        print('call %s():' % func.__name__)
+        return func(*args, **kw)
+    return wrapper
+
+2、带参数的decorator:
+import functools
+
+def log(text):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            print('%s %s():' % (text, func.__name__))
+            return func(*args, **kw)
+        return wrapper
+    return decorator
